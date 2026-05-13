@@ -1,6 +1,7 @@
 import type { Transaction } from "@/lib/types";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
+import { DownloadInvoiceButton } from "./download-invoice-button";
 
 export function TransactionsTable({
   transactions,
@@ -44,6 +45,9 @@ export function TransactionsTable({
             >
               Status
             </th>
+            <th scope="col" className="px-4 py-3 text-right">
+              <span className="sr-only">Actions</span>
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-100">
@@ -63,6 +67,9 @@ export function TransactionsTable({
               </td>
               <td className="px-4 py-3 align-top">
                 <StatusBadge status={t.status} />
+              </td>
+              <td className="px-4 py-3 align-top text-right">
+                <DownloadInvoiceButton transactionId={t.id} />
               </td>
             </tr>
           ))}
