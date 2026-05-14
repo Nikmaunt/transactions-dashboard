@@ -26,7 +26,11 @@ purpose — read `README.md` for the why, this is the *how*.
   `Intl.*` calls elsewhere.
 - `components/transactions-table.tsx` — owns selection and the retry
   reducer. The hot path: keep the dispatch‑per‑resolved‑promise shape;
-  do **not** `Promise.all` the retries.
+  do **not** `Promise.all` the retries. The reducer treats
+  `RETRY_RESOLVED` as valid only for a row currently in `retrying`;
+  stale resolutions on an already‑settled row are dropped (guards
+  against a duplicate‑dispatch race that would otherwise let a stale
+  failure overwrite a recorded success).
 - `components/download-invoice-button.tsx` — owns its own
   `isGenerating` state. Don't lift it.
 
@@ -47,6 +51,10 @@ purpose — read `README.md` for the why, this is the *how*.
 
 - `URL.createObjectURL` is **not** in jsdom. Tests that exercise the
   download path stub it via `Object.defineProperty(URL, ...)`.
+- `HTMLAnchorElement.click` is **not** in jsdom either — invoking it
+  logs `"Not implemented: navigation to another Document"` to stderr.
+  The download‑button test stubs the prototype in `beforeEach` to keep
+  CI output clean and to give tests a spy they can assert against.
 - `getByText` matches both visible text and `sr-only` text. Prefer
   `getByRole` with name regex when the same string can appear twice.
 - The retry endpoint rejects with 409 if called on a non‑failed
