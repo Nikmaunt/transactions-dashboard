@@ -8,14 +8,17 @@ import { retryTransaction } from "@/lib/api";
 import { StatusBadge } from "./status-badge";
 import { DownloadInvoiceButton } from "./download-invoice-button";
 
-type RowRetryState = "retrying" | "succeeded" | "failed";
-type RetryStateMap = ReadonlyMap<string, RowRetryState>;
+export type RowRetryState = "retrying" | "succeeded" | "failed";
+export type RetryStateMap = ReadonlyMap<string, RowRetryState>;
 
-type Action =
+export type RetryAction =
   | { type: "RETRY_STARTED"; ids: readonly string[] }
   | { type: "RETRY_RESOLVED"; id: string; status: RetryOutcome };
 
-function retryReducer(state: RetryStateMap, action: Action): RetryStateMap {
+export function retryReducer(
+  state: RetryStateMap,
+  action: RetryAction,
+): RetryStateMap {
   switch (action.type) {
     case "RETRY_STARTED": {
       const next = new Map(state);
@@ -23,6 +26,10 @@ function retryReducer(state: RetryStateMap, action: Action): RetryStateMap {
       return next;
     }
     case "RETRY_RESOLVED": {
+      // Only a row currently in flight can transition to an outcome.
+      // A stale resolution (e.g. from a duplicate dispatch) must not
+      // overwrite the recorded outcome of an already-resolved row.
+      if (state.get(action.id) !== "retrying") return state;
       const next = new Map(state);
       next.set(action.id, action.status === "success" ? "succeeded" : "failed");
       return next;

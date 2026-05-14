@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { TransactionsTable } from "@/components/transactions-table";
+import {
+  TransactionsTable,
+  retryReducer,
+  type RetryStateMap,
+} from "@/components/transactions-table";
 import type { Transaction } from "@/lib/types";
 import { server } from "@/test/msw/server";
 import { deferred, type Deferred } from "@/test/helpers/deferred";
@@ -161,5 +165,39 @@ describe("TransactionsTable", () => {
     await waitFor(() =>
       expect(within(row("txn_c")).getByText("Success")).toBeInTheDocument(),
     );
+  });
+});
+
+describe("retryReducer", () => {
+  const empty: RetryStateMap = new Map();
+
+  it("ignores RETRY_RESOLVED for a row that has already resolved", () => {
+    // A stray duplicate resolution (e.g. a held-Enter double-click that
+    // fired two parallel fetches) must not overwrite the recorded outcome.
+    const after = retryReducer(
+      retryReducer(
+        retryReducer(empty, { type: "RETRY_STARTED", ids: ["txn_a"] }),
+        { type: "RETRY_RESOLVED", id: "txn_a", status: "success" },
+      ),
+      { type: "RETRY_RESOLVED", id: "txn_a", status: "failed" },
+    );
+    expect(after.get("txn_a")).toBe("succeeded");
+  });
+
+  it("allows a fresh RETRY_STARTED to re-arm a row for a second outcome", () => {
+    const afterFirstFail = retryReducer(
+      retryReducer(empty, { type: "RETRY_STARTED", ids: ["txn_a"] }),
+      { type: "RETRY_RESOLVED", id: "txn_a", status: "failed" },
+    );
+    const reArmed = retryReducer(afterFirstFail, {
+      type: "RETRY_STARTED",
+      ids: ["txn_a"],
+    });
+    const afterSecondSuccess = retryReducer(reArmed, {
+      type: "RETRY_RESOLVED",
+      id: "txn_a",
+      status: "success",
+    });
+    expect(afterSecondSuccess.get("txn_a")).toBe("succeeded");
   });
 });
