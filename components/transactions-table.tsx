@@ -2,7 +2,7 @@
 
 import { useMemo, useReducer, useRef, useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import type { Transaction, TransactionStatus } from "@/lib/types";
+import type { RetryOutcome, Transaction, TransactionStatus } from "@/lib/types";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { retryTransaction } from "@/lib/api";
 import { StatusBadge } from "./status-badge";
@@ -13,7 +13,7 @@ type RetryStateMap = ReadonlyMap<string, RowRetryState>;
 
 type Action =
   | { type: "RETRY_STARTED"; ids: readonly string[] }
-  | { type: "RETRY_RESOLVED"; id: string; status: "success" | "failed" };
+  | { type: "RETRY_RESOLVED"; id: string; status: RetryOutcome };
 
 function retryReducer(state: RetryStateMap, action: Action): RetryStateMap {
   switch (action.type) {
