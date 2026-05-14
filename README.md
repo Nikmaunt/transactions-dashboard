@@ -196,11 +196,11 @@ What we deliberately don't test:
 ```
 npm run typecheck    ✓
 npm run lint         ✓
-npm test             ✓ 3 files, 12 tests
-npm run build        ✓ 1.7 s compile, all routes generated
+npm test             ✓ 3 files, 14 tests
+npm run build        ✓ all routes generated
 curl GET  /          ✓ 200, page renders Transactions
 curl POST /api/transactions/txn_001/retry  ✓ 200, JSON {id, status}
-curl GET  /api/transactions/txn_002/invoice ✓ 200 in 2.8 s with attachment header
+curl GET  /api/transactions/txn_002/invoice ✓ 200 with attachment header after 2 s
 ```
 
 ## What I'd add with more time
@@ -241,5 +241,5 @@ In rough priority order:
 - **lucide-react** — icons.
 - **Vitest 4** + **Testing Library** + **MSW 2** — tests + fetch mocks.
 
-Every runtime dependency is defensible: there are exactly four (`next`,
-`react`, `react-dom`, `sonner`, `lucide-react`).
+Every runtime dependency is defensible: `next`, `react`, `react-dom`,
+`sonner`, `lucide-react` — five entries, nothing else.
