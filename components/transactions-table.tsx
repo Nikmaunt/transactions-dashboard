@@ -198,7 +198,9 @@ export function TransactionsTable({
                 <tr
                   key={t.id}
                   className={
-                    isSelected ? "bg-zinc-50/80 hover:bg-zinc-50" : "hover:bg-zinc-50"
+                    isSelected
+                      ? "bg-zinc-100 hover:bg-zinc-100"
+                      : "hover:bg-zinc-50"
                   }
                 >
                   <td className="w-10 px-4 py-3 align-top">
