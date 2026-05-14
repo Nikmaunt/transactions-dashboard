@@ -9,6 +9,11 @@ import { deferred } from "@/test/helpers/deferred";
 
 const createObjectURL = vi.fn((): string => "blob:fake-url");
 const revokeObjectURL = vi.fn();
+// jsdom does not implement HTMLAnchorElement.click; without a stub it
+// logs "Not implemented: navigation to another Document" to stderr
+// whenever triggerBrowserDownload fires. Stub the prototype once so
+// every test stays quiet, and let individual tests assert against it.
+let anchorClickSpy: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   Object.defineProperty(URL, "createObjectURL", {
@@ -19,11 +24,16 @@ beforeEach(() => {
     value: revokeObjectURL,
     configurable: true,
   });
+  anchorClickSpy = vi.fn();
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
+    anchorClickSpy,
+  );
 });
 
 afterEach(() => {
   createObjectURL.mockClear();
   revokeObjectURL.mockClear();
+  vi.restoreAllMocks();
 });
 
 function renderButton(id = "txn_001") {
@@ -77,29 +87,15 @@ describe("DownloadInvoiceButton", () => {
       ),
     );
 
-    const clickSpy = vi.fn();
-    const originalCreateElement = document.createElement.bind(document);
-    const createElementSpy = vi
-      .spyOn(document, "createElement")
-      .mockImplementation((tag: string) => {
-        const el = originalCreateElement(tag);
-        if (tag === "a") {
-          (el as HTMLAnchorElement).click = clickSpy;
-        }
-        return el;
-      });
-
     const user = userEvent.setup();
     renderButton("txn_001");
 
     await user.click(screen.getByRole("button", { name: /download invoice/i }));
 
-    await waitFor(() => expect(clickSpy).toHaveBeenCalled());
+    await waitFor(() => expect(anchorClickSpy).toHaveBeenCalled());
     expect(createObjectURL).toHaveBeenCalled();
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:fake-url");
     expect(await screen.findByText(/invoice downloaded/i)).toBeInTheDocument();
-
-    createElementSpy.mockRestore();
   });
 
   it("shows an error toast when the request fails", async () => {

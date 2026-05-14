@@ -44,6 +44,22 @@ const fixtures: readonly Transaction[] = [
     occurredAt: "2026-05-09T19:42:00.000Z",
     status: "success",
   },
+  {
+    id: "txn_e",
+    description: "Live Concert Pass",
+    amountCents: 2499,
+    currency: "USD",
+    occurredAt: "2026-05-08T18:30:00.000Z",
+    status: "pending",
+  },
+  {
+    id: "txn_f",
+    description: "Documentary Bundle — Refunded",
+    amountCents: 999,
+    currency: "USD",
+    occurredAt: "2026-05-07T20:01:00.000Z",
+    status: "refunded",
+  },
 ];
 
 beforeEach(() => {
@@ -78,9 +94,10 @@ describe("TransactionsTable", () => {
     expect(
       within(row("txn_a")).getByRole("checkbox", { name: /select transaction txn_a/i }),
     ).toBeInTheDocument();
-    expect(
-      within(row("txn_d")).queryByRole("checkbox"),
-    ).not.toBeInTheDocument();
+    // success, pending, and refunded rows are all non-selectable.
+    expect(within(row("txn_d")).queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(within(row("txn_e")).queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(within(row("txn_f")).queryByRole("checkbox")).not.toBeInTheDocument();
   });
 
   it("disables the Retry Selected button until at least one row is selected", async () => {
