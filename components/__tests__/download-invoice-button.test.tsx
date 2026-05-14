@@ -13,7 +13,7 @@ const revokeObjectURL = vi.fn();
 // logs "Not implemented: navigation to another Document" to stderr
 // whenever triggerBrowserDownload fires. Stub the prototype once so
 // every test stays quiet, and let individual tests assert against it.
-let anchorClickSpy: ReturnType<typeof vi.fn>;
+let anchorClickSpy: ReturnType<typeof vi.fn<() => void>>;
 
 beforeEach(() => {
   Object.defineProperty(URL, "createObjectURL", {
@@ -24,7 +24,7 @@ beforeEach(() => {
     value: revokeObjectURL,
     configurable: true,
   });
-  anchorClickSpy = vi.fn();
+  anchorClickSpy = vi.fn<() => void>();
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
     anchorClickSpy,
   );
