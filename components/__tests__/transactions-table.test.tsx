@@ -139,6 +139,17 @@ describe("TransactionsTable", () => {
     );
     await user.click(screen.getByRole("button", { name: /retry selected \(3\)/i }));
 
+    // The batch announces itself through a dedicated live region: a
+    // role="status" element whose text content is the batch copy. The
+    // per-row spinners are also role="status" but carry no text (their
+    // icon is aria-hidden), so only the batch region matches here.
+    const statusRegions = screen.getAllByRole("status");
+    expect(
+      statusRegions.some((el) =>
+        /retrying 3 transactions/i.test(el.textContent ?? ""),
+      ),
+    ).toBe(true);
+
     // All three rows are now showing the retrying spinner; selection is cleared.
     expect(
       within(row("txn_a")).getByRole("status", { name: /retrying txn_a/i }),

@@ -70,16 +70,15 @@ export function TransactionsTable({
     return ids;
   }, [transactions, retryState]);
 
-  const selectionList = useMemo(() => [...selection], [selection]);
   const retryingCount = useMemo(() => {
     let n = 0;
     for (const value of retryState.values()) if (value === "retrying") n += 1;
     return n;
   }, [retryState]);
   const allSelected =
-    selectableIds.size > 0 && selectionList.length === selectableIds.size;
+    selectableIds.size > 0 && selection.size === selectableIds.size;
   const someSelected =
-    selectionList.length > 0 && selectionList.length < selectableIds.size;
+    selection.size > 0 && selection.size < selectableIds.size;
 
   function toggleRow(id: string) {
     setSelection((prev) => {
@@ -99,7 +98,7 @@ export function TransactionsTable({
   const retryButtonRef = useRef<HTMLButtonElement | null>(null);
 
   function handleRetrySelected() {
-    const ids = selectionList;
+    const ids = [...selection];
     if (ids.length === 0) return;
     dispatch({ type: "RETRY_STARTED", ids });
     setSelection(new Set());
@@ -126,24 +125,33 @@ export function TransactionsTable({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-zinc-600" aria-live="polite">
+        <p className="text-sm text-zinc-600">
           {retryingCount > 0
             ? `Retrying ${retryingCount} transaction${retryingCount === 1 ? "" : "s"}…`
-            : selectionList.length === 0
-              ? "Select failed transactions to retry them in bulk."
-              : `${selectionList.length} selected.`}
+            : selection.size > 0
+              ? `${selection.size} selected.`
+              : selectableIds.size === 0
+                ? "All failed transactions have been retried."
+                : "Select failed transactions to retry them in bulk."}
         </p>
         <button
           ref={retryButtonRef}
           type="button"
           onClick={handleRetrySelected}
-          disabled={selectionList.length === 0}
+          disabled={selection.size === 0}
           className="inline-flex items-center rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Retry Selected
-          {selectionList.length > 0 ? ` (${selectionList.length})` : ""}
+          {selection.size > 0 ? ` (${selection.size})` : ""}
         </button>
       </div>
+
+      {retryingCount > 0 ? (
+        <span role="status" className="sr-only">
+          Retrying {retryingCount} transaction
+          {retryingCount === 1 ? "" : "s"}…
+        </span>
+      ) : null}
 
       <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
         <table className="min-w-full divide-y divide-zinc-200 text-sm">
