@@ -1,3 +1,4 @@
+import "server-only";
 import type { Transaction } from "@/lib/types";
 import { seedTransactions } from "./seed";
 

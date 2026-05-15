@@ -19,7 +19,10 @@ purpose — read `README.md` for the why, this is the *how*.
 - `app/api/transactions/[id]/{invoice,retry}/route.ts` — mock endpoints.
 - `lib/server/{seed,store,delay}.ts` — in‑memory store. **Singleton,
   mutable.** Successful retries flip a transaction from `failed` to
-  `success` in place; state resets on server restart.
+  `success` in place; state resets on server restart. Every module
+  under `lib/server/` starts with `import "server-only"`; keep that
+  line on any new file added there so a client import fails the build
+  instead of silently bundling the store.
 - `lib/api.ts` — the typed fetch wrappers the UI imports. Add new
   endpoints here, not inline.
 - `lib/format.ts` — currency + date helpers. Use these, don't inline

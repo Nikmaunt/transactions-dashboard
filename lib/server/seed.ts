@@ -1,3 +1,4 @@
+import "server-only";
 import type { Transaction } from "@/lib/types";
 
 export const seedTransactions: readonly Transaction[] = [
