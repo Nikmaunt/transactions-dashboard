@@ -12,7 +12,7 @@ export function DownloadInvoiceButton({
 }) {
   const [isGenerating, setIsGenerating] = useState(false);
 
-  async function handleClick() {
+  async function handleDownload() {
     setIsGenerating(true);
     try {
       const blob = await downloadInvoiceBlob(transactionId);
@@ -33,7 +33,7 @@ export function DownloadInvoiceButton({
     <>
       <button
         type="button"
-        onClick={handleClick}
+        onClick={handleDownload}
         disabled={isGenerating}
         aria-label={
           isGenerating

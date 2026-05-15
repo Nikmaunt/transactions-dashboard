@@ -94,7 +94,6 @@ describe("TransactionsTable", () => {
     expect(
       within(row("txn_a")).getByRole("checkbox", { name: /select transaction txn_a/i }),
     ).toBeInTheDocument();
-    // success, pending, and refunded rows are all non-selectable.
     expect(within(row("txn_d")).queryByRole("checkbox")).not.toBeInTheDocument();
     expect(within(row("txn_e")).queryByRole("checkbox")).not.toBeInTheDocument();
     expect(within(row("txn_f")).queryByRole("checkbox")).not.toBeInTheDocument();
@@ -133,7 +132,6 @@ describe("TransactionsTable", () => {
     const user = userEvent.setup();
     render(<TransactionsTable transactions={fixtures} />);
 
-    // Select all three failed rows via the header select-all checkbox.
     await user.click(
       screen.getByRole("checkbox", { name: /select all failed transactions/i }),
     );
@@ -150,7 +148,6 @@ describe("TransactionsTable", () => {
       ),
     ).toBe(true);
 
-    // All three rows are now showing the retrying spinner; selection is cleared.
     expect(
       within(row("txn_a")).getByRole("status", { name: /retrying txn_a/i }),
     ).toBeInTheDocument();
@@ -162,12 +159,10 @@ describe("TransactionsTable", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /retry selected$/i })).toBeDisabled();
 
-    // Resolve out of natural order: b succeeds first.
     gates.txn_b.resolve("success");
     await waitFor(() =>
       expect(within(row("txn_b")).getByText("Success")).toBeInTheDocument(),
     );
-    // The other two are still pending.
     expect(
       within(row("txn_a")).getByRole("status", { name: /retrying txn_a/i }),
     ).toBeInTheDocument();
@@ -175,7 +170,6 @@ describe("TransactionsTable", () => {
       within(row("txn_c")).getByRole("status", { name: /retrying txn_c/i }),
     ).toBeInTheDocument();
 
-    // a fails — should flip back to Failed and become re-selectable.
     gates.txn_a.resolve("failed");
     await waitFor(() =>
       expect(
@@ -183,12 +177,10 @@ describe("TransactionsTable", () => {
       ).toBeInTheDocument(),
     );
     expect(within(row("txn_a")).getByText("Failed")).toBeInTheDocument();
-    // c is still pending.
     expect(
       within(row("txn_c")).getByRole("status", { name: /retrying txn_c/i }),
     ).toBeInTheDocument();
 
-    // c finally succeeds.
     gates.txn_c.resolve("success");
     await waitFor(() =>
       expect(within(row("txn_c")).getByText("Success")).toBeInTheDocument(),
