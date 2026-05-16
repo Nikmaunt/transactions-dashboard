@@ -31,9 +31,12 @@ purpose — read `README.md` for the why, this is the *how*.
   reducer. The hot path: keep the dispatch‑per‑resolved‑promise shape;
   do **not** `Promise.all` the retries. The reducer treats
   `RETRY_RESOLVED` as valid only for a row currently in `retrying`;
-  stale resolutions on an already‑settled row are dropped (guards
-  against a duplicate‑dispatch race that would otherwise let a stale
-  failure overwrite a recorded success).
+  stale resolutions on an already‑settled row are dropped. No path
+  here actually double‑resolves an id (selection clears and the row
+  leaves the selectable set the instant a retry starts) — this is a
+  defensive state‑machine invariant, not a fix for an observed race.
+  Keep it: it keeps the reducer correct under any out‑of‑order or
+  duplicate dispatch.
 - `components/download-invoice-button.tsx` — owns its own
   `isGenerating` state. Don't lift it.
 
