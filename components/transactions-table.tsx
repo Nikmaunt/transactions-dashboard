@@ -26,9 +26,12 @@ export function retryReducer(
       return next;
     }
     case "RETRY_RESOLVED": {
-      // Only a row currently in flight can transition to an outcome.
-      // A stale resolution (e.g. from a duplicate dispatch) must not
-      // overwrite the recorded outcome of an already-resolved row.
+      // State-machine invariant: only a row still in flight may move to
+      // an outcome. The current UI cannot dispatch two resolutions for
+      // one id (selection is cleared and the row leaves the selectable
+      // set the instant a retry starts), so this is a defensive guard,
+      // not a fix for a reachable race — it keeps a late or duplicate
+      // resolution from clobbering an already-recorded outcome.
       if (state.get(action.id) !== "retrying") return state;
       const next = new Map(state);
       next.set(action.id, action.status === "success" ? "succeeded" : "failed");
@@ -59,6 +62,10 @@ export function TransactionsTable({
     () => new Map() as RetryStateMap,
   );
 
+  // Only base-"failed" rows that aren't already in flight or recorded
+  // as succeeded are selectable. This is also what keeps the retry
+  // endpoint's 409 ("only failed can be retried") unreachable from the
+  // UI: a non-failed row can never be selected, so it is never POSTed.
   const selectableIds = useMemo(() => {
     const ids = new Set<string>();
     for (const t of transactions) {
@@ -75,6 +82,25 @@ export function TransactionsTable({
     for (const value of retryState.values()) if (value === "retrying") n += 1;
     return n;
   }, [retryState]);
+
+  // Text for the always-mounted batch live region. Screen readers only
+  // announce text *changes* inside an already-mounted role="status";
+  // a region that unmounts on completion announces the start but never
+  // the finish. Once any retry has run, retryState stays non-empty, so
+  // "" -> "Retrying N…" -> "All retries complete." each announce, and a
+  // fresh batch flips it back to "Retrying N…" (announced again).
+  const batchStatus =
+    retryingCount > 0
+      ? `Retrying ${retryingCount} transaction${retryingCount === 1 ? "" : "s"}…`
+      : retryState.size > 0
+        ? "All retries complete."
+        : "";
+
+  // selection ⊆ selectableIds always holds — additions come only from
+  // the per-row checkbox (rendered solely for selectable rows) or
+  // toggleAll (sets the subset), and RETRY_STARTED clears selection in
+  // the same handler that pulls rows out of selectableIds. So a size
+  // match is equivalent to set equality here.
   const allSelected =
     selectableIds.size > 0 && selection.size === selectableIds.size;
   const someSelected =
@@ -95,14 +121,18 @@ export function TransactionsTable({
     );
   }
 
-  const retryButtonRef = useRef<HTMLButtonElement | null>(null);
+  const statusRef = useRef<HTMLSpanElement | null>(null);
 
   function handleRetrySelected() {
     const ids = [...selection];
     if (ids.length === 0) return;
     dispatch({ type: "RETRY_STARTED", ids });
     setSelection(new Set());
-    retryButtonRef.current?.focus();
+    // The trigger disables itself on the next render (selection is now
+    // empty), which would orphan focus to <body> in most browsers.
+    // Move focus to the batch status region so keyboard and screen
+    // reader users keep their place and hear the batch announcement.
+    statusRef.current?.focus();
     for (const id of ids) {
       retryTransaction(id)
         .then((result) =>
@@ -135,7 +165,6 @@ export function TransactionsTable({
                 : "Select failed transactions to retry them in bulk."}
         </p>
         <button
-          ref={retryButtonRef}
           type="button"
           onClick={handleRetrySelected}
           disabled={selection.size === 0}
@@ -146,12 +175,14 @@ export function TransactionsTable({
         </button>
       </div>
 
-      {retryingCount > 0 ? (
-        <span role="status" className="sr-only">
-          Retrying {retryingCount} transaction
-          {retryingCount === 1 ? "" : "s"}…
-        </span>
-      ) : null}
+      <span
+        ref={statusRef}
+        role="status"
+        tabIndex={-1}
+        className="sr-only"
+      >
+        {batchStatus}
+      </span>
 
       <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
         <table className="min-w-full divide-y divide-zinc-200 text-sm">
