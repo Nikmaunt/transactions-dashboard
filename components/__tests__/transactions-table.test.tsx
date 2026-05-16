@@ -192,8 +192,10 @@ describe("retryReducer", () => {
   const empty: RetryStateMap = new Map();
 
   it("ignores RETRY_RESOLVED for a row that has already resolved", () => {
-    // A stray duplicate resolution (e.g. a held-Enter double-click that
-    // fired two parallel fetches) must not overwrite the recorded outcome.
+    // Defensive state-machine invariant: a RETRY_RESOLVED for an id no
+    // longer in "retrying" is dropped, not applied. The current UI can't
+    // double-resolve one id; this just keeps a late or duplicate
+    // resolution from clobbering an already-recorded outcome.
     const after = retryReducer(
       retryReducer(
         retryReducer(empty, { type: "RETRY_STARTED", ids: ["txn_a"] }),
